@@ -80,7 +80,7 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Teacher Portal Login</h2>
             <p class="text-gray-500 mb-8">Restricted access for authorized faculty only.</p>
             
-            <button onclick="window.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-md group">
+            <button onclick="window.showLoginConfirmation()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-md group">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6" alt="Google">
                 <span class="group-hover:text-gray-900">Sign in with Google</span>
             </button>
@@ -204,6 +204,30 @@
         </div>
     </div>
 
+    <!-- Confirm Login Modal (New) -->
+    <div id="confirm-login-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+        <div class="absolute inset-0 bg-black opacity-50"></div>
+        <div class="bg-white rounded-lg p-6 shadow-xl z-10 max-w-sm w-full mx-4 transform transition-all scale-100">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 mb-4">
+                    <i class="fas fa-sign-in-alt text-[#E16734] text-xl"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Sign In</h3>
+                <p class="text-sm text-gray-500 mt-2">
+                    You are about to be redirected to Google to sign in. Do you wish to proceed?
+                </p>
+                <div class="mt-5 flex gap-3">
+                    <button onclick="window.closeLoginConfirmation()" type="button" class="flex-1 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
+                        Cancel
+                    </button>
+                    <button onclick="window.confirmLogin()" type="button" class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#E16734] text-base font-medium text-white hover:bg-[#c05528] focus:outline-none sm:text-sm">
+                        Yes, Sign In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -216,10 +240,12 @@
         const ALLOWED_EMAILS = [
             "teacher@mgcub.ac.in", 
             "admin@mgcub.ac.in",
-            "pabitramondal2635@gmail.com" 
+            "pabitramondal2635@gmail.com",
+            "another.email@gmail.com", // REPLACE with the new email
+            "faculty.member@mgcub.ac.in" // REPLACE with another email if needed
         ];
-
-        // --- Firebase Configuration ---
+        
+        // ... existing firebaseConfig ...
         const firebaseConfig = {
             apiKey: "AIzaSyC_JIo87PMLA6HdUHEpwxqvDr0L8yAs0xQ",
             authDomain: "mgcub-attendence.firebaseapp.com",
@@ -241,6 +267,7 @@
 
         // --- DOM Elements for Auth ---
         const loginContainer = document.getElementById('login-container');
+        const confirmLoginModal = document.getElementById('confirm-login-modal');
         const appContent = document.getElementById('app-content');
         const userNav = document.getElementById('user-nav');
         const userNameEl = document.getElementById('user-name');
@@ -248,6 +275,19 @@
         const loginErrorEl = document.getElementById('login-error');
 
         // --- Authentication Logic ---
+
+        window.showLoginConfirmation = function() {
+            confirmLoginModal.classList.remove('hidden');
+        }
+
+        window.closeLoginConfirmation = function() {
+            confirmLoginModal.classList.add('hidden');
+        }
+
+        window.confirmLogin = function() {
+            window.closeLoginConfirmation();
+            window.loginWithGoogle();
+        }
 
         window.loginWithGoogle = async function() {
             loginErrorEl.classList.add('hidden');
