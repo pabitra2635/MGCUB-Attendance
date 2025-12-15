@@ -357,12 +357,7 @@
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
             const day = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
-            
-            dateInput.value = todayStr;
-            // Restrict selection to today only
-            dateInput.min = todayStr;
-            dateInput.max = todayStr;
+            dateInput.value = `${year}-${month}-${day}`;
             
             // Set Time
             updateTime();
@@ -435,17 +430,6 @@
             if (!currentUser) return;
 
             const date = dateInput.value;
-
-            // Validate date is today (security check for stale sessions)
-            const today = new Date();
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-            
-            if (date !== todayStr) {
-                alert("Attendance can only be marked for the current date. Please refresh the page.");
-                window.location.reload();
-                return;
-            }
-
             const subject = subjectSelect.value;
             const docId = `${date}_${subject.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
