@@ -42,7 +42,7 @@
         }
     </style>
 </head>
-<body class="text-gray-800 h-screen flex flex-col">
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
 
     <!-- Navbar -->
     <nav class="bg-[#E16734] text-white shadow-lg sticky top-0 z-50 flex-none">
@@ -71,9 +71,9 @@
         </div>
     </nav>
 
-    <!-- Login Container (Shown when NOT logged in) -->
-    <div id="login-container" class="flex-grow flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100">
+    <!-- Login Container (Modal Overlay) -->
+    <div id="login-container" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/50 backdrop-blur-sm transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full text-center border border-gray-100 transform scale-100 transition-transform duration-300">
             <div class="bg-orange-50 h-20 w-20 rounded-full flex items-center justify-center mx-auto mb-6">
                 <i class="fas fa-university text-[#E16734] text-3xl"></i>
             </div>
@@ -88,8 +88,8 @@
         </div>
     </div>
 
-    <!-- Main Content (Shown when logged in) -->
-    <main id="app-content" class="max-w-4xl mx-auto px-4 py-8 flex-grow w-full hidden">
+    <!-- Main Content (Always visible but blurred when logged out) -->
+    <main id="app-content" class="max-w-4xl mx-auto px-4 py-8 flex-grow w-full transition-all duration-500 filter blur-sm pointer-events-none select-none overflow-y-auto">
         <div class="flex justify-end mb-2 sm:hidden">
              <p class="text-xs text-gray-500" id="current-time">Loading...</p>
         </div>
@@ -291,6 +291,7 @@
         window.loginWithGoogle = async function() {
             loginErrorEl.classList.add('hidden');
             try {
+                // Using signInWithPopup for modal-like authentication window
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
                 
@@ -323,9 +324,13 @@
                 // User is logged in AND authorized
                 currentUser = user;
                 
-                // Show App, Hide Login
+                // Hide Login Modal
                 loginContainer.classList.add('hidden');
-                appContent.classList.remove('hidden');
+                
+                // Unblur App Content
+                appContent.classList.remove('filter', 'blur-sm', 'pointer-events-none', 'select-none');
+                document.body.classList.remove('overflow-hidden');
+                
                 userNav.classList.replace('hidden', 'flex'); // Show user info
                 
                 // Update Profile Info
@@ -334,12 +339,16 @@
 
                 loadAttendance(); // Load data
             } else {
-                // User is not logged in OR is unauthorized (already signed out by login check)
+                // User is not logged in OR is unauthorized
                 currentUser = null;
                 
-                // Show Login, Hide App
+                // Show Login Modal
                 loginContainer.classList.remove('hidden');
-                appContent.classList.add('hidden');
+                
+                // Blur App Content
+                appContent.classList.add('filter', 'blur-sm', 'pointer-events-none', 'select-none');
+                document.body.classList.add('overflow-hidden');
+                
                 userNav.classList.replace('flex', 'hidden');
             }
         });
