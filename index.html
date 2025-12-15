@@ -63,7 +63,7 @@
                         <p class="text-sm font-medium" id="user-name">User</p>
                         <p class="text-xs text-white/80" id="user-email">email@example.com</p>
                     </div>
-                    <button onclick="window.logout()" class="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors" title="Logout">
+                    <button onclick="window.showLogoutConfirmation()" class="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors" title="Logout">
                         <i class="fas fa-sign-out-alt"></i>
                     </button>
                 </div>
@@ -80,7 +80,7 @@
             <h2 class="text-2xl font-bold text-gray-800 mb-2">Teacher Portal Login</h2>
             <p class="text-gray-500 mb-8">Restricted access for authorized faculty only.</p>
             
-            <button onclick="window.showLoginConfirmation()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-md group">
+            <button onclick="window.loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 px-4 rounded-xl transition-all shadow-sm hover:shadow-md group">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6 h-6" alt="Google">
                 <span class="group-hover:text-gray-900">Sign in with Google</span>
             </button>
@@ -203,24 +203,24 @@
         </div>
     </div>
 
-    <!-- Confirm Login Modal (New) -->
-    <div id="confirm-login-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+    <!-- Confirm Logout Modal (New) -->
+    <div id="confirm-logout-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
         <div class="absolute inset-0 bg-black opacity-50"></div>
         <div class="bg-white rounded-lg p-6 shadow-xl z-10 max-w-sm w-full mx-4 transform transition-all scale-100">
             <div class="text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange-100 mb-4">
-                    <i class="fas fa-sign-in-alt text-[#E16734] text-xl"></i>
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                    <i class="fas fa-sign-out-alt text-red-600 text-xl"></i>
                 </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Sign In</h3>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Confirm Logout</h3>
                 <p class="text-sm text-gray-500 mt-2">
-                    You are about to be redirected to Google to sign in. Do you wish to proceed?
+                    Are you sure you want to log out?
                 </p>
                 <div class="mt-5 flex gap-3">
-                    <button onclick="window.closeLoginConfirmation()" type="button" class="flex-1 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
+                    <button onclick="window.closeLogoutConfirmation()" type="button" class="flex-1 inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:text-sm">
                         Cancel
                     </button>
-                    <button onclick="window.confirmLogin()" type="button" class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#E16734] text-base font-medium text-white hover:bg-[#c05528] focus:outline-none sm:text-sm">
-                        Yes, Sign In
+                    <button onclick="window.confirmLogout()" type="button" class="flex-1 inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:text-sm">
+                        Logout
                     </button>
                 </div>
             </div>
@@ -266,7 +266,7 @@
 
         // --- DOM Elements for Auth ---
         const loginContainer = document.getElementById('login-container');
-        const confirmLoginModal = document.getElementById('confirm-login-modal');
+        const confirmLogoutModal = document.getElementById('confirm-logout-modal');
         const appContent = document.getElementById('app-content');
         const userNav = document.getElementById('user-nav');
         const userNameEl = document.getElementById('user-name');
@@ -275,17 +275,17 @@
 
         // --- Authentication Logic ---
 
-        window.showLoginConfirmation = function() {
-            confirmLoginModal.classList.remove('hidden');
+        window.showLogoutConfirmation = function() {
+            confirmLogoutModal.classList.remove('hidden');
         }
 
-        window.closeLoginConfirmation = function() {
-            confirmLoginModal.classList.add('hidden');
+        window.closeLogoutConfirmation = function() {
+            confirmLogoutModal.classList.add('hidden');
         }
 
-        window.confirmLogin = function() {
-            window.closeLoginConfirmation();
-            window.loginWithGoogle();
+        window.confirmLogout = function() {
+            window.closeLogoutConfirmation();
+            window.logout();
         }
 
         window.loginWithGoogle = async function() {
