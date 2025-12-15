@@ -543,8 +543,18 @@
                 // 3. Prepare Table Data
                 const tableData = Object.keys(studentStats).map(id => {
                     const stats = studentStats[id];
-                    const percentage = totalClasses > 0 ? ((stats.present / totalClasses) * 100).toFixed(1) : "0.0";
-                    return [id, stats.name, `${stats.present} / ${totalClasses}`, `${percentage}%`];
+                    const percentageStr = totalClasses > 0 ? ((stats.present / totalClasses) * 100).toFixed(1) : "0.0";
+                    const percentageVal = parseFloat(percentageStr);
+                    
+                    // Calculate Marks based on Percentage
+                    let marks = 0;
+                    if (percentageVal >= 95) marks = 5;
+                    else if (percentageVal >= 90) marks = 4;
+                    else if (percentageVal >= 85) marks = 3;
+                    else if (percentageVal >= 80) marks = 2;
+                    else if (percentageVal >= 75) marks = 1;
+                    
+                    return [id, stats.name, `${stats.present} / ${totalClasses}`, `${percentageStr}%`, marks];
                 });
 
                 // 4. Generate PDF
@@ -565,7 +575,7 @@
                 // Table
                 doc.autoTable({
                     startY: 50,
-                    head: [['Enrollment No', 'Student Name', 'Attendance (P/Total)', 'Percentage']],
+                    head: [['Enrollment No', 'Student Name', 'Attendance (P/Total)', 'Percentage', 'Marks']],
                     body: tableData,
                     theme: 'grid',
                     headStyles: { 
@@ -580,7 +590,8 @@
                     },
                     columnStyles: {
                         0: { fontStyle: 'bold' }, // ID
-                        3: { halign: 'right' }    // Percentage
+                        3: { halign: 'right' },    // Percentage
+                        4: { halign: 'center', fontStyle: 'bold' } // Marks centered
                     },
                     alternateRowStyles: { fillColor: [255, 247, 237] } // Light orange tint
                 });
