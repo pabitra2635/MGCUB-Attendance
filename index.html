@@ -118,7 +118,7 @@
                 <div class="hidden sm:block text-sm text-gray-500" id="desktop-time"></div>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- Date Selection -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Date</label>
@@ -147,17 +147,6 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Search Filter (New Feature) -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Student</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </div>
-                        <input type="text" id="student-search" placeholder="Name or Roll No..." class="pl-10 block w-full rounded-lg border-gray-300 bg-gray-50 border focus:ring-[#E16734] focus:border-[#E16734] sm:text-sm p-2.5 shadow-sm">
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -167,7 +156,7 @@
             <div class="bg-gray-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-4">
                 <div>
                     <h3 class="text-lg font-bold text-gray-900">Student List</h3>
-                    <p class="text-sm text-gray-500">Total: <span id="total-students">30</span> | Visible: <span id="visible-students">30</span></p>
+                    <p class="text-sm text-gray-500">Total: <span id="total-students">30</span></p>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full border border-green-200">
@@ -309,11 +298,9 @@
         const studentListContainer = document.getElementById('student-list-container');
         const dateInput = document.getElementById('attendance-date');
         const subjectSelect = document.getElementById('subject-select');
-        const searchInput = document.getElementById('student-search');
         
         const presentCountEl = document.getElementById('present-count');
         const absentCountEl = document.getElementById('absent-count');
-        const visibleStudentsEl = document.getElementById('visible-students');
         const totalStudentsEl = document.getElementById('total-students');
         
         const currentTimeEl = document.getElementById('current-time');
@@ -358,7 +345,6 @@
 
         // State
         let students = JSON.parse(JSON.stringify(initialStudents));
-        let searchTerm = "";
 
         // --- Core Functions ---
 
@@ -377,10 +363,6 @@
             // Add Listeners
             dateInput.addEventListener('change', loadAttendance);
             subjectSelect.addEventListener('change', loadAttendance);
-            searchInput.addEventListener('input', (e) => {
-                searchTerm = e.target.value.toLowerCase();
-                renderStudents();
-            });
 
             renderStudents();
             updateStats();
@@ -396,28 +378,10 @@
         }
 
         function renderStudents() {
-            // Filter students based on search
-            const filteredStudents = students.filter(s => 
-                s.name.toLowerCase().includes(searchTerm) || 
-                s.id.toLowerCase().includes(searchTerm)
-            );
-
             studentListContainer.innerHTML = '';
             studentListContainer.appendChild(loadingOverlay); // Keep overlay in DOM
             
-            if (filteredStudents.length === 0) {
-                studentListContainer.innerHTML += `
-                    <div class="py-8 text-center text-gray-400">
-                        <i class="fas fa-search mb-2 text-2xl"></i>
-                        <p>No students found matching "${searchTerm}"</p>
-                    </div>
-                `;
-            }
-
-            filteredStudents.forEach((student) => {
-                // Find index in original array to ensure state updates correctly
-                const originalIndex = students.findIndex(s => s.id === student.id);
-                
+            students.forEach((student, index) => {
                 const row = document.createElement('div');
                 row.className = 'student-row grid grid-cols-12 items-center py-3 px-6 border-b border-gray-100 last:border-0 transition-colors duration-150';
                 
@@ -436,8 +400,8 @@
                         </div>
                     </div>
                     <div class="col-span-3 sm:col-span-4 flex items-center justify-end sm:justify-center">
-                        <label for="student-${originalIndex}" class="flex items-center cursor-pointer relative">
-                            <input type="checkbox" id="student-${originalIndex}" class="sr-only" onchange="window.toggleAttendance(${originalIndex})" ${isChecked}>
+                        <label for="student-${index}" class="flex items-center cursor-pointer relative">
+                            <input type="checkbox" id="student-${index}" class="sr-only" onchange="window.toggleAttendance(${index})" ${isChecked}>
                             <div class="w-11 h-6 bg-gray-200 rounded-full border border-gray-200 toggle-bg transition-colors duration-200 ease-in-out ${student.present ? 'bg-green-500 border-green-500' : ''}"></div>
                             <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-200 ease-in-out ${student.present ? 'translate-x-5' : 'translate-x-0'}"></div>
                             <span class="ml-3 text-sm font-medium w-16 hidden sm:block ${statusColor}">${statusText}</span>
@@ -447,7 +411,6 @@
                 studentListContainer.appendChild(row);
             });
             
-            visibleStudentsEl.textContent = filteredStudents.length;
             totalStudentsEl.textContent = students.length;
         }
 
@@ -518,10 +481,6 @@
                     students = JSON.parse(JSON.stringify(initialStudents));
                 }
                 
-                // Reset search when loading new date/subject
-                searchTerm = "";
-                searchInput.value = "";
-                
                 renderStudents();
                 updateStats();
 
@@ -541,21 +500,7 @@
         }
 
         window.markAll = function(present) {
-            // Only affect currently filtered students if search is active? 
-            // Usually simpler to mark ALL students in the underlying list.
-            if(searchTerm) {
-                if(confirm("Search filter is active. Do you want to mark ONLY the visible students?")) {
-                    students.forEach(s => {
-                        if(s.name.toLowerCase().includes(searchTerm) || s.id.toLowerCase().includes(searchTerm)) {
-                            s.present = present;
-                        }
-                    });
-                } else {
-                    students.forEach(s => s.present = present);
-                }
-            } else {
-                students.forEach(s => s.present = present);
-            }
+            students.forEach(s => s.present = present);
             renderStudents();
             updateStats();
         }
