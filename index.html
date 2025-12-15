@@ -6,6 +6,9 @@
     <title>MGCU Attendance Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- PDF Generation Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -195,8 +198,8 @@
                 </div>
                 
                 <div class="flex gap-3 w-full sm:w-auto">
-                    <button onclick="window.downloadCSV()" class="flex-1 sm:flex-none justify-center items-center flex gap-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
-                        <i class="fas fa-download"></i> Export CSV
+                    <button onclick="window.downloadPDF()" class="flex-1 sm:flex-none justify-center items-center flex gap-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+                        <i class="fas fa-file-pdf text-red-500"></i> Export PDF Report
                     </button>
                     <button id="save-btn" onclick="window.saveAttendance()" class="flex-1 sm:flex-none justify-center items-center flex gap-2 bg-[#E16734] hover:bg-[#c05528] text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fas fa-cloud-upload-alt"></i> <span>Save Record</span>
@@ -255,7 +258,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-analytics.js";
-        import { getFirestore, doc, setDoc, getDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 
         // --- AUTH CONFIGURATION ---
@@ -491,6 +494,108 @@
             }
         }
 
+        // --- PDF Generation Logic ---
+        
+        window.downloadPDF = async function() {
+            if (!currentUser) return;
+            const subject = subjectSelect.value;
+            const btn = document.querySelector('button[onclick="window.downloadPDF()"]');
+            const originalContent = btn.innerHTML;
+            
+            try {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+                btn.disabled = true;
+
+                // 1. Fetch All Attendance Records for this subject
+                const attendanceRef = collection(db, 'users', currentUser.uid, 'attendance');
+                const q = query(attendanceRef, where("subject", "==", subject));
+                const querySnapshot = await getDocs(q);
+                
+                const totalClasses = querySnapshot.size;
+                
+                if (totalClasses === 0) {
+                    alert("No previous attendance records found for this subject to calculate percentage.");
+                    return;
+                }
+
+                // 2. Aggregate Data
+                // Initialize map with current student roster to ensure everyone is included
+                const studentStats = {};
+                initialStudents.forEach(s => {
+                    studentStats[s.id] = {
+                        name: s.name,
+                        present: 0
+                    };
+                });
+
+                // Iterate through history
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.students && Array.isArray(data.students)) {
+                        data.students.forEach(s => {
+                            if (s.present && studentStats[s.id]) {
+                                studentStats[s.id].present++;
+                            }
+                        });
+                    }
+                });
+
+                // 3. Prepare Table Data
+                const tableData = Object.keys(studentStats).map(id => {
+                    const stats = studentStats[id];
+                    const percentage = totalClasses > 0 ? ((stats.present / totalClasses) * 100).toFixed(1) : "0.0";
+                    return [id, stats.name, `${stats.present} / ${totalClasses}`, `${percentage}%`];
+                });
+
+                // 4. Generate PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Header
+                doc.setFontSize(22);
+                doc.setTextColor(225, 103, 52); // #E16734
+                doc.text("MGCU Attendance Report", 14, 20);
+                
+                doc.setFontSize(11);
+                doc.setTextColor(100);
+                doc.text(`Subject: ${subject}`, 14, 30);
+                doc.text(`Total Classes Conducted: ${totalClasses}`, 14, 36);
+                doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN', { dateStyle: 'full' })}`, 14, 42);
+
+                // Table
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Enrollment No', 'Student Name', 'Attendance (P/Total)', 'Percentage']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { 
+                        fillColor: [225, 103, 52], 
+                        textColor: 255,
+                        fontStyle: 'bold'
+                    },
+                    styles: { 
+                        fontSize: 10, 
+                        cellPadding: 4,
+                        valign: 'middle'
+                    },
+                    columnStyles: {
+                        0: { fontStyle: 'bold' }, // ID
+                        3: { halign: 'right' }    // Percentage
+                    },
+                    alternateRowStyles: { fillColor: [255, 247, 237] } // Light orange tint
+                });
+
+                doc.save(`Attendance_Report_${subject.replace(/\s+/g, '_')}.pdf`);
+
+            } catch (error) {
+                console.error("Error generating PDF:", error);
+                alert("Failed to generate PDF. See console for details.");
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
         // --- Global Functions (Exposed to Window) ---
 
         window.toggleAttendance = function(index) {
@@ -511,6 +616,7 @@
             successModal.classList.add('hidden');
         }
 
+        // Kept for backward compatibility if needed, though hidden in UI
         window.downloadCSV = function() {
             const subject = subjectSelect.value;
             const date = dateInput.value;
